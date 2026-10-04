@@ -1,0 +1,5 @@
+interface:
+  display_name: "Оркестратор"
+  short_description: "Ведёт явно запущенный план"
+policy:
+  allow_implicit_invocation: false
