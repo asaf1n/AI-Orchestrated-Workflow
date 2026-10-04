@@ -122,12 +122,23 @@ Planner создаёт новый или существенно пересмот
 Общий комплект ставится один раз, чтобы проекты не хранили вторую копию протокола:
 
 ```bash
-mkdir -p ~/.agents/skills
-cp -R skills/orchestrate ~/.agents/skills/orchestrate
-cp -R skills/planner ~/.agents/skills/planner
-cp -R skills/implementer ~/.agents/skills/implementer
-cp -R skills/reviewer ~/.agents/skills/reviewer
+for skill in orchestrate planner implementer reviewer; do
+  mkdir -p "$HOME/.agents/skills/$skill"
+  cp "skills/$skill/SKILL.md" "$HOME/.agents/skills/$skill/SKILL.md"
+done
+mkdir -p ~/.agents/skills/orchestrate/references
+cp -R skills/orchestrate/references/. ~/.agents/skills/orchestrate/references/
+if [ ! -f ~/.agents/skills/orchestrate/agents/openai.yaml ]; then
+  mkdir -p ~/.agents/skills/orchestrate/agents
+  cp skills/orchestrate/agents/openai.yaml ~/.agents/skills/orchestrate/agents/openai.yaml
+fi
 ```
+
+Установка обновляет общий комплект, включая [шаблон метода](skills/orchestrate/references/method.md), но не создаёт проектные файлы. При обновлении сохраняются персональные настройки обнаружения навыков и наследования модели; локальные изменения сначала сверяются с устанавливаемым комплектом. Общие reference-файлы остаются в `~/.agents/skills/orchestrate/references/`.
+
+При явно порученном подключении проекта orchestrate читает существующий `AGENTS.md` и создаёт только отсутствующую привязку `orchestrate_workflow/method.md` из общего шаблона. Существующие файлы не перезаписываются, конфликты сообщаются. Готовый метод от пользователя заранее не требуется. При запросе статуса или обсуждении файлы не создаются.
+
+При подготовке конкретного плана planner создаёт его каталог, `00_summary.md` и материалы задач; пустая структура заранее не создаётся. Локальный каталог сессии и точное исключение создаёт orchestrate перед первым разрешённым вызовом этапа, файлы обмена — по действующему протоколу. Исполнитель и reviewer получают готовую привязку и точные пути, проект самостоятельно не подключают.
 
 В проекте остаются контракт `AGENTS.md`, привязка путей `orchestrate_workflow/method.md` и определение четырёх навыков так, чтобы orchestrate, planner, implementer и reviewer читали этот комплект. Контракт описывает предметную область и проверки проекта. Этот репозиторий их не задаёт. При создании локального каталога текущей сессии его конкретный путь `/orchestrate_workflow/<имя-плана>/` добавляется в `.git/info/exclude`; `orchestrate_workflow/plans/` остаётся отслеживаемым.
 
