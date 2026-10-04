@@ -1,6 +1,6 @@
 # AI-Orchestrated Workflow
 
-Guideline and skills for running a coding plan with Claude Code or Codex: one orchestrator session, one stage at a time, an independent review, and a single place where the plan state lives.
+Guideline and skills for running a coding plan with AI agent (Claude Code/Codex): one orchestrator session, one stage at a time, an independent review, and a single place where the plan state lives.
 
 Пользователь утверждает план и отдельно разрешает запуск. Оркестратор не исполняет этап сам. Исполнитель делает один этап по единственному заданию. Ревьювер проверяет результат в новом контексте. Принятый этап вместе с его состоянием фиксируется одним коммитом. Всё, что должно пережить сессию, лежит в git; локально хранится только текущий обмен трёх файлов.
 
