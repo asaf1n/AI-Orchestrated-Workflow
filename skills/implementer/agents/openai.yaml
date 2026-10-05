@@ -1,0 +1,4 @@
+interface:
+  display_name: "Исполнитель"
+  short_description: "Выполнение одного этапа по заданию spec.md"
+  default_prompt: "Используй $implementer для выполнения указанного spec.md."

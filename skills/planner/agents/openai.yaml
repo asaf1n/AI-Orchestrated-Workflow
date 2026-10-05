@@ -1,0 +1,4 @@
+interface:
+  display_name: "Планировщик"
+  short_description: "Подготовка задач к исполнению по этапам"
+  default_prompt: "Используй $planner, чтобы подготовить план для конвейера исполнения."

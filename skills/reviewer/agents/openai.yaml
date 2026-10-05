@@ -1,0 +1,4 @@
+interface:
+  display_name: "Ревьювер"
+  short_description: "Независимое ревью плана или результата этапа"
+  default_prompt: "Используй $reviewer для независимой проверки плана или этапа."
