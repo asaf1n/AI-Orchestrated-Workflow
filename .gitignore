@@ -1,0 +1,17 @@
+# System & environment caches
+.trash/
+synced/
+*.tmp
+*.bak
+*.swp
+*~
+
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# Python & testing caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
