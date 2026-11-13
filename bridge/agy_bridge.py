@@ -131,6 +131,8 @@ class AgyBridge:
             not isinstance(raw_id, str) or not self.CONVERSATION_RE.fullmatch(raw_id)
         ):
             raise BridgeError("agy returned invalid conversation_id")
+        if raw_id is None and status == "SUCCESS":
+            status = "UNKNOWN"
         response = payload.get("response", "")
         response = response if isinstance(response, str) else json.dumps(response, ensure_ascii=False)
         return {
@@ -180,7 +182,11 @@ class AgyBridge:
             if not entry or entry.get("conversation_id") != conversation_id:
                 raise BridgeError("Conversation is not registered for this plan")
             try:
-                result = self._invoke(feedback, conversation_id=conversation_id)
+                result = self._invoke(
+                    f"Корректировка текущей сессии плана {plan}. "
+                    f"Не запускай отдельную оркестрацию. {feedback}",
+                    conversation_id=conversation_id,
+                )
             except BridgeError:
                 entry["status"] = "UNKNOWN"
                 self._store(registry)

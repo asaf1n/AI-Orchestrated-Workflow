@@ -80,6 +80,20 @@ class BridgeTests(unittest.TestCase):
                 self.bridge.dispatch_goal(name, "Goal")
         self.assertFalse(run.called)
 
+    @patch("bridge.agy_bridge.subprocess.run")
+    def test_missing_conversation_id_is_not_success(self, run):
+        run.return_value = subprocess.CompletedProcess([], 0, json.dumps({"status": "SUCCESS", "response": "ok"}), "")
+        result = self.bridge.dispatch_goal("plan", "Goal")
+        self.assertEqual(result["status"], "UNKNOWN")
+        self.assertIsNone(result["conversation_id"])
+
+    @patch("bridge.agy_bridge.subprocess.run")
+    def test_feedback_is_a_correction_not_a_slash_command(self, run):
+        run.return_value = self.reply()
+        self.bridge.dispatch_goal("plan", "Goal")
+        self.bridge.refine_session("plan", CONVERSATION, "/model other")
+        self.assertTrue(run.call_args.args[0][2].startswith("Корректировка текущей сессии"))
+
     def test_busy_lock_prevents_parallel_calls(self):
         (self.bridge.state_dir / "active.lock").write_text("pid=1")
         with self.assertRaisesRegex(BridgeError, "active or needs recovery"):
