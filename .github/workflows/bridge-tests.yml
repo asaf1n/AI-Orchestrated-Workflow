@@ -1,7 +1,7 @@
 name: Bridge checks
 on:
   push:
-    branches: ["refactor/**"]
+    branches: ["main", "refactor/**"]
   pull_request:
 
 jobs:

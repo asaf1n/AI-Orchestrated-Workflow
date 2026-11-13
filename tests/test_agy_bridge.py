@@ -94,6 +94,18 @@ class BridgeTests(unittest.TestCase):
         self.bridge.refine_session("plan", CONVERSATION, "/model other")
         self.assertTrue(run.call_args.args[0][2].startswith("Корректировка текущей сессии"))
 
+    @patch("bridge.agy_bridge.subprocess.run")
+    def test_session_info_recovers_result_without_cli(self, run):
+        run.return_value = self.reply()
+        self.bridge.dispatch_goal("plan", "Goal")
+        info = self.bridge.session_info("plan")
+        self.assertEqual(info["conversation_id"], CONVERSATION)
+        self.assertEqual(info["response"], "ok")
+        self.assertFalse(info["active_turn"])
+        self.assertEqual(run.call_count, 1)
+        with self.assertRaises(BridgeError):
+            self.bridge.session_info("missing")
+
     def test_busy_lock_prevents_parallel_calls(self):
         (self.bridge.state_dir / "active.lock").write_text("pid=1")
         with self.assertRaisesRegex(BridgeError, "active or needs recovery"):

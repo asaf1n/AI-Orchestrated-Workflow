@@ -165,9 +165,7 @@ class AgyBridge:
                 registry[plan] = {"conversation_id": None, "status": "UNKNOWN"}
                 self._store(registry)
                 raise
-            registry[plan] = {
-                "conversation_id": result["conversation_id"], "status": result["status"]
-            }
+            registry[plan] = self._entry(result)
             self._store(registry)
             return {"plan": plan, **result}
 
@@ -191,6 +189,32 @@ class AgyBridge:
                 entry["status"] = "UNKNOWN"
                 self._store(registry)
                 raise
-            entry.update(conversation_id=result["conversation_id"], status=result["status"])
+            registry[plan] = self._entry(result)
             self._store(registry)
             return {"plan": plan, **result}
+
+    @staticmethod
+    def _entry(result: dict[str, Any]) -> dict[str, Any]:
+        return {
+            "conversation_id": result["conversation_id"],
+            "status": result["status"],
+            "exit_code": result["exit_code"],
+            "response": result["response"],
+            "truncated": result["truncated"],
+        }
+
+    def session_info(self, plan: str) -> dict[str, Any]:
+        """Read the stored outcome of the last completed turn; never invokes agy.
+
+        Lets a client whose tool call timed out recover conversation_id and
+        the last response without replaying the request.
+        """
+        plan = self._validate_plan(plan)
+        entry = self._load().get(plan)
+        if entry is None:
+            raise BridgeError("Plan is not registered")
+        return {
+            "plan": plan,
+            "active_turn": (self.state_dir / "active.lock").exists(),
+            **entry,
+        }

@@ -46,6 +46,14 @@ def build_server():
         """Send a correction to the same registered agy conversation."""
         return gateway.refine_session(plan, conversation_id, feedback)
 
+    @server.tool()
+    def agy_session_info(plan: str) -> dict:
+        """Return the stored conversation_id, status and last response of a plan.
+
+        Read-only; use it after a client-side timeout instead of re-dispatching.
+        """
+        return gateway.session_info(plan)
+
     return server
 
 

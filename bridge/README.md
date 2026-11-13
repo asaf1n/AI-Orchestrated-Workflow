@@ -46,9 +46,11 @@ The server **always** binds `127.0.0.1:8765`. Configure the gateway to expose `h
 
 `agy_dispatch_goal(plan, goal, action="plan")` creates a registered `agy` conversation and returns `conversation_id`, `status`, `response`, exit code and diagnostic. Actions are `plan`, `run` (only for approved plans), `resume`, `status`. The first prompt explicitly invokes `/orchestrate`.
 
+`agy_session_info(plan)` is read-only: it returns the stored `conversation_id`, status, exit code, last response and whether a turn is active. Use it after a client-side tool timeout (a CLI turn may outlast the remote client's call limit) instead of dispatching again.
+
 `agy_refine_session(plan, conversation_id, feedback)` passes feedback to **that same** conversation, retaining the host context. The bridge checks that the ID belongs to the named plan. Multiple active owners of a plan are rejected; a filesystem lock prevents overlapping calls in a workspace.
 
-If `agy` times out or returns malformed output, the plan is marked `UNKNOWN`. The bridge does **not** automatically replay the request: inspect the workspace, CLI conversation and active processes first. A stale `active.lock` must be investigated before manual removal. The session registry is stored outside the product checkout with owner-only permissions where supported; do not share it or place it in Git.
+If `agy` times out or returns malformed output, the plan is marked `UNKNOWN`. The bridge does **not** automatically replay the request: inspect the workspace, CLI conversation and active processes first. A stale `active.lock` must be investigated before manual removal. A plan left in `UNKNOWN` without `conversation_id` cannot be refined or re-dispatched; after inspection, remove its entry from `sessions.json` manually. The session registry is stored outside the product checkout with owner-only permissions where supported; do not share it or place it in Git.
 
 Headless permission prompts may be denied without a nonzero code. The bridge returns `BLOCKED` when stderr contains a recognized refusal and always includes the exit code and a diagnostic. Inspect the resulting files and command evidence before accepting an implementation. Configure narrow `agy` permissions in advance; do not disable approval checks as a default.
 
