@@ -1,13 +1,17 @@
 """Unit checks for the local agy handoff protocol (no live agy required)."""
 
 from pathlib import Path
+import asyncio
+import importlib.util
 import json
+import os
 import subprocess
 import tempfile
 import unittest
 from unittest.mock import patch
 
 from bridge.agy_bridge import AgyBridge, BridgeError
+from bridge.server import build_server
 
 
 CONVERSATION = "055a398f-db14-4c5f-abbb-1bf03f8120a7"
@@ -110,6 +114,23 @@ class BridgeTests(unittest.TestCase):
         (self.bridge.state_dir / "active.lock").write_text("pid=1")
         with self.assertRaisesRegex(BridgeError, "active or needs recovery"):
             self.bridge.dispatch_goal("plan", "Goal")
+
+    @unittest.skipIf(importlib.util.find_spec("mcp") is None, "mcp SDK is optional")
+    def test_mcp_tool_surfaces_bridge_error_message(self):
+        from mcp.server.mcpserver.exceptions import ToolError, UnexpectedToolError
+
+        with patch.dict(
+            os.environ,
+            {
+                "ORCHESTRATE_WORKSPACE": str(self.workspace),
+                "ORCHESTRATE_STATE_DIR": str(self.bridge.state_dir),
+            },
+        ):
+            server = build_server()
+        with self.assertRaises(ToolError) as ctx:
+            asyncio.run(server.call_tool("agy_session_info", {"plan": "missing"}))
+        self.assertNotIsInstance(ctx.exception, UnexpectedToolError)
+        self.assertIn("Plan is not registered", str(ctx.exception))
 
 
 if __name__ == "__main__":

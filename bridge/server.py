@@ -10,12 +10,13 @@ import os
 import re
 from pathlib import Path
 
-from bridge.agy_bridge import AgyBridge
+from bridge.agy_bridge import AgyBridge, BridgeError
 
 
 def build_server():
     # Optional dependency is imported only when the MCP server starts.
     from mcp.server import MCPServer
+    from mcp.server.mcpserver.exceptions import ToolError
 
     workspace = os.environ.get("ORCHESTRATE_WORKSPACE")
     if not workspace:
@@ -32,6 +33,12 @@ def build_server():
     )
     server = MCPServer("AI-Orchestrated-Workflow")
 
+    def _run(fn, *args):
+        try:
+            return fn(*args)
+        except BridgeError as exc:
+            raise ToolError(str(exc)) from exc
+
     @server.tool()
     def agy_dispatch_goal(plan: str, goal: str, action: str = "plan") -> dict:
         """Start the sole agy orchestration session for a named plan.
@@ -39,12 +46,12 @@ def build_server():
         action: plan (default), run (approved plan only), resume or status.
         Execution remains subject to the workflow's explicit permissions.
         """
-        return gateway.dispatch_goal(plan, goal, action)
+        return _run(gateway.dispatch_goal, plan, goal, action)
 
     @server.tool()
     def agy_refine_session(plan: str, conversation_id: str, feedback: str) -> dict:
         """Send a correction to the same registered agy conversation."""
-        return gateway.refine_session(plan, conversation_id, feedback)
+        return _run(gateway.refine_session, plan, conversation_id, feedback)
 
     @server.tool()
     def agy_session_info(plan: str) -> dict:
@@ -52,7 +59,7 @@ def build_server():
 
         Read-only; use it after a client-side timeout instead of re-dispatching.
         """
-        return gateway.session_info(plan)
+        return _run(gateway.session_info, plan)
 
     return server
 
