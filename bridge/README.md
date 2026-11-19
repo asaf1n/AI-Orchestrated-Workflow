@@ -1,22 +1,22 @@
-# Remote LLM controller → Antigravity
+# Внешний LLM-контроллер → Antigravity
 
-The MCP bridge accepts tasks and corrections from an external chat or agent and forwards them into the *same* Antigravity CLI conversation. It does not act as a second Orchestrator and does not execute arbitrary shell commands received from the client.
+MCP-мост принимает задачи и корректировки от внешнего чата или агента и передаёт их в *ту же* сессию Antigravity CLI (`agy`). Мост не выступает вторым оркестратором и не выполняет произвольные команды оболочки от клиента.
 
-## Prerequisites
+## Требования
 
-- Python 3.11+, authenticated `agy` with working `agy -p ... --output-format json`.
-- Four installed workflow skills and a project with `AGENTS.md` and `orchestrate_workflow/method.md`.
-- A trusted caller. Remote clients need a TLS reverse proxy enforcing authentication and authorization before requests reach the local MCP endpoint.
+- Python 3.11+, авторизованный `agy` с работающим `agy -p ... --output-format json`.
+- Четыре установленных навыка workflow и проект с `AGENTS.md` и `orchestrate_workflow/method.md`.
+- Доверенный клиент. Для удалённых подключений требуется обратный TLS-прокси с аутентификацией и авторизацией перед локальной точкой входа MCP.
 
-Install the MCP SDK:
+Установка MCP SDK:
 
 ```bash
 python -m pip install "mcp>=2,<3"
 ```
 
-Set `ORCHESTRATE_WORKSPACE` to an absolute path inside the trusted machine. Optional: `ORCHESTRATE_STATE_DIR` (default `~/.local/state/ai-orchestrated-workflow`), `AGY_BIN`, `AGY_MODEL` (only when pinning is required), `AGY_TIMEOUT_SECONDS` (1–7200).
+Задай `ORCHESTRATE_WORKSPACE` как абсолютный путь к допущенному проекту. Дополнительно: `ORCHESTRATE_STATE_DIR` (по умолчанию `~/.local/state/ai-orchestrated-workflow`), `AGY_BIN`, `AGY_MODEL` (только при необходимости закрепления модели), `AGY_TIMEOUT_SECONDS` (1–7200).
 
-Local MCP client (`stdio`):
+Локальный MCP-клиент (`stdio`):
 
 ```json
 {
@@ -32,7 +32,7 @@ Local MCP client (`stdio`):
 }
 ```
 
-Start a network-accessible MCP endpoint behind an authenticated TLS gateway:
+Запуск сетевой точки входа MCP за аутентифицированным TLS-шлюзом:
 
 ```bash
 ORCHESTRATE_WORKSPACE=/absolute/path/to/project \
@@ -40,29 +40,29 @@ MCP_PUBLIC_HOST=mcp.example.org \
 python -m bridge.server --transport streamable-http --port 8765
 ```
 
-The server **always** binds `127.0.0.1:8765`. Configure the gateway to expose `https://mcp.example.org/mcp`, enforce caller authentication (for example, OAuth/OIDC at the gateway), rate limits and TLS, and forward the permitted Host/Origin. Do not forward the port directly or allow anonymous internet traffic. Provide the HTTPS MCP URL to a compatible remote LLM chat; the chat must support remote MCP servers. For clients without MCP, use a trusted MCP-capable relay rather than publishing an unauthenticated HTTP API.
+Сервер **всегда** слушает `127.0.0.1` на указанном `--port` (по умолчанию `8765`). Настрой шлюз для публикации `https://mcp.example.org/mcp` с аутентификацией клиента (например, OAuth/OIDC на шлюзе), ограничением частоты запросов, TLS и передачей разрешённых `Host`/`Origin`. Не пробрасывай порт напрямую и не открывай анонимный доступ из сети. Передай HTTPS-адрес MCP совместимому удалённому LLM-чату с поддержкой удалённых MCP-серверов; для клиентов без MCP используй доверенный MCP-ретранслятор вместо открытого HTTP API.
 
-## Tools
+## Инструменты
 
-`agy_dispatch_goal(plan, goal, action="plan")` creates a registered `agy` conversation and returns `conversation_id`, `status`, `response`, exit code and diagnostic. Actions are `plan`, `run` (only for approved plans), `resume`, `status`. The first prompt explicitly invokes `/orchestrate`.
+`agy_dispatch_goal(plan, goal, action="plan")` создаёт зарегистрированную сессию `agy` и возвращает `conversation_id`, `status`, `response`, код выхода и диагностику. Допустимые значения `action`: `plan` (по умолчанию), `run` (только для утверждённого плана), `resume`, `status`. Первый запрос явно вызывает `/orchestrate`.
 
-`agy_session_info(plan)` is read-only: it returns the stored `conversation_id`, status, exit code, last response and whether a turn is active. Use it after a client-side tool timeout (a CLI turn may outlast the remote client's call limit) instead of dispatching again.
+`agy_session_info(plan)` работает только на чтение: возвращает сохранённый `conversation_id`, статус, код выхода, последний ответ и признак активного хода. Используй его после клиентского таймаута (ход CLI может длиться дольше лимита вызова удалённого клиента) вместо повторного запуска `agy_dispatch_goal`.
 
-`agy_refine_session(plan, conversation_id, feedback)` passes feedback to **that same** conversation, retaining the host context. The bridge checks that the ID belongs to the named plan. Multiple active owners of a plan are rejected; a filesystem lock prevents overlapping calls in a workspace.
+`agy_refine_session(plan, conversation_id, feedback)` передаёт корректировку в **ту же** сессию с сохранением контекста. Мост проверяет принадлежность `conversation_id` указанному плану. Наличие нескольких активных владельцев одного плана отклоняется; файловая блокировка предотвращает параллельные вызовы в одном рабочем каталоге.
 
-If `agy` times out or returns malformed output, the plan is marked `UNKNOWN`. The bridge does **not** automatically replay the request: inspect the workspace, CLI conversation and active processes first. A stale `active.lock` must be investigated before manual removal. A plan left in `UNKNOWN` without `conversation_id` cannot be refined or re-dispatched; after inspection, remove its entry from `sessions.json` manually. The session registry is stored outside the product checkout with owner-only permissions where supported; do not share it or place it in Git.
+При таймауте или некорректном выводе `agy` план получает статус `UNKNOWN`. Мост **не** повторяет запрос автоматически: сначала проверь рабочее дерево, сессию CLI и активные процессы. Устаревший `active.lock` проверяется до ручного удаления. План в статусе `UNKNOWN` без `conversation_id` нельзя продолжить через `agy_refine_session` или перезапустить через `agy_dispatch_goal`: после проверки удали его запись из `sessions.json` вручную. Реестр сессий хранится вне рабочего каталога продукта с правами только для владельца (где поддерживается ОС); не передавай его и не добавляй в Git.
 
-Headless permission prompts may be denied without a nonzero code. The bridge returns `BLOCKED` when stderr contains a recognized refusal and always includes the exit code and a diagnostic. Inspect the resulting files and command evidence before accepting an implementation. Configure narrow `agy` permissions in advance; do not disable approval checks as a default.
+Запросы подтверждений в headless-режиме могут отклоняться без ненулевого кода выхода. Мост возвращает статус `BLOCKED`, если `stderr` содержит распознаваемый отказ, и всегда передаёт код выхода и диагностику. Перед приёмкой проверяй итоговые файлы и доказательства команд. Настраивай узкие разрешения `agy` заранее; не отключай контроль подтверждений по умолчанию.
 
-Calls are sequential: feedback is accepted after the preceding CLI turn returns, not injected into an already-running turn. The bridge preserves conversation identity across MCP client reconnects and process restarts, provided the state directory is retained.
+Вызовы выполняются последовательно: корректировка принимается после завершения предыдущего хода CLI и не внедряется в выполняющийся ход. Мост сохраняет соответствие сессий при переподключении MCP-клиента и перезапуске процесса при сохранении каталога состояния.
 
-## Checks
+## Проверки
 
 ```bash
 python -m unittest discover -s tests -v
 python -m compileall -q bridge
 ```
 
-Unit tests use a stubbed subprocess and do not require agy or network access. Before use, verify the remote MCP handshake, auth boundary, CLI model, allowed tools and read-only plan/status cycle in the actual environment.
+Модульные тесты используют заглушку подпроцесса и не требуют `agy` или сети. Перед применением проверь рукопожатие удалённого MCP, границу аутентификации, модель CLI, разрешённые инструменты и read-only цикл `plan`/`status` в реальной среде.
 
-References: [Antigravity headless](https://antigravity.google/docs/cli/headless/), [conversation continuation](https://antigravity.google/docs/cli/conversations/), [MCP Python SDK](https://py.sdk.modelcontextprotocol.io/run/).
+Ссылки: [Antigravity headless](https://antigravity.google/docs/cli/headless/), [продолжение сессий](https://antigravity.google/docs/cli/conversations/), [MCP Python SDK](https://py.sdk.modelcontextprotocol.io/run/).
