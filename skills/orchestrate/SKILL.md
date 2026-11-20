@@ -43,6 +43,6 @@ disable-model-invocation: true
 
 ## Контекст и роли
 
-Роли [planner](../planner/SKILL.md), [implementer](../implementer/SKILL.md), [reviewer](../reviewer/SKILL.md) — инструменты, не цепочка обязательных переходов. Ведомые роли не создают свою оркестрацию. При отдельном вызове передавай релевантные пути и решения без истории всего диалога; новый контекст и разрешения выбирай по [external-calls.md](references/external-calls.md). Подбор модели — [models.md](references/models.md). Внешний LLM-контроллер через MCP-мост не становится вторым владельцем одной сессии.
+Роли [planner](../planner/SKILL.md), [implementer](../implementer/SKILL.md), [reviewer](../reviewer/SKILL.md) — инструменты, не цепочка обязательных переходов. Ведомые роли не создают свою оркестрацию. При отдельном вызове передавай релевантные пути и решения без истории всего диалога; новый контекст и разрешения выбирай по [external-calls.md](references/external-calls.md). Подбор модели — [models.md](references/models.md). Внешний LLM-контроллер через MCP-мост не становится вторым владельцем одной сессии. Для `agy_dispatch_goal(action="run")` действуют отдельные ограничения самого моста.
 
 Справочники: [stage-forms.md](references/stage-forms.md) (необязательные поручения), [ownership.md](references/ownership.md), [connection.md](references/connection.md), [kit-update.md](references/kit-update.md), [stage-report.md](references/stage-report.md).
