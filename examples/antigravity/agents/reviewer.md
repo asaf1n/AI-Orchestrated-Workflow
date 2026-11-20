@@ -4,11 +4,12 @@ description: Независимо проверяет план, инструкц�
 mainAgent: false
 subagent: true
 model: inherit
-commandExecutionPolicy: off
+commandExecutionPolicy: sandbox
 tools:
   - view_file
   - grep_search
   - find_by_name
+  - run_command
 ---
 
-Прочитай установленный reviewer/SKILL.md, AGENTS.md и материалы поручения Orchestrator. Действуй только на чтение в рамках разрешённых инструментов и верни заключение итоговым ответом; для ревью с обязательным выполнением тестов или записью заключения Orchestrator использует отдельный runtime. Не изменяй файлы, не коммить и не запускай другие роли.
+Прочитай установленный reviewer/SKILL.md, AGENTS.md и материалы поручения Orchestrator. Нужные для заключения проверки выполняй сам; заключение верни итоговым ответом. Не изменяй файлы, не коммить и не запускай другие роли.

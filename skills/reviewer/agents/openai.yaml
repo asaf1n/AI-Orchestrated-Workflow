@@ -1,6 +1,6 @@
 interface:
   display_name: "Ревьювер"
-  short_description: "Независимое ревью плана, инструкций или результата этапа"
-  default_prompt: "Используй $reviewer для независимой проверки плана, инструкций или этапа."
+  short_description: "Независимое ревью плана, инструкций или результата"
+  default_prompt: "Используй $reviewer для независимой проверки плана, инструкций или результата."
 policy:
   allow_implicit_invocation: false

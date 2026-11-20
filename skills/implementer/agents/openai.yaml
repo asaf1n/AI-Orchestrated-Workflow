@@ -1,6 +1,6 @@
 interface:
   display_name: "Исполнитель"
-  short_description: "Выполнение одного этапа по заданию spec.md"
-  default_prompt: "Используй $implementer для выполнения указанного spec.md."
+  short_description: "Выполнение порученной задачи"
+  default_prompt: "Используй $implementer для выполнения поручения."
 policy:
   allow_implicit_invocation: false
